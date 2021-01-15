@@ -42,7 +42,7 @@ public class exercise1 {
         env.getConfig().setGlobalJobParameters(params);
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        SingleOutputStreamOperator<Tuple3<Integer, Integer, Integer>> filterStream = source.
+        SingleOutputStreamOperator<Tuple4<Integer, Integer, Integer, Integer>> sumTumblingEventTimeWindows = source.
                 map(new MapFunction<String, Tuple3<Integer, Integer, Integer>>() {
                     public Tuple3<Integer, Integer, Integer> map(String in) throws Exception{
                         String[] fieldArray = in.split(",");
@@ -64,10 +64,8 @@ public class exercise1 {
                             }
                         }
 
-                );
-
-        SingleOutputStreamOperator<Tuple4<Integer, Integer, Integer, Integer>> sumTumblingEventTimeWindows =
-                filterStream.windowAll(TumblingEventTimeWindows.of(Time.seconds(3600))).apply(new SimpleSum());
+                )
+                .windowAll(TumblingEventTimeWindows.of(Time.hours(1))).apply(new SimpleSum());
 
         // emit result
         if (params.has("output")) {
