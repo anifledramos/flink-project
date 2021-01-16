@@ -3,8 +3,12 @@ package es.upm.master;
 import java.util.Iterator;
 
 import org.apache.flink.api.common.functions.FilterFunction;
+import org.apache.flink.api.common.functions.FoldFunction;
 import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple6;
+import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.utils.ParameterTool;
 import org.apache.flink.streaming.api.TimeCharacteristic;
@@ -13,6 +17,7 @@ import org.apache.flink.streaming.api.datastream.SingleOutputStreamOperator;
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
 import org.apache.flink.streaming.api.functions.timestamps.AscendingTimestampExtractor;
 import org.apache.flink.streaming.api.functions.windowing.AllWindowFunction;
+import org.apache.flink.streaming.api.functions.windowing.WindowFunction;
 import org.apache.flink.streaming.api.windowing.assigners.TumblingEventTimeWindows;
 import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
@@ -49,7 +54,7 @@ public class exercise2 {
                 })
                 .filter(new FilterFunction<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>>() {
                     public boolean filter(Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> in) throws Exception {
-                        return ((startSegment<=in.f5) && (endSegment>=in.f5) && in.f4.equals(0) && speed<in.f2);
+                        return ((startSegment<=in.f5) && (endSegment>=in.f5) && in.f4.equals(0) && in.f2>speed);
                     }
                 })
                 .assignTimestampsAndWatermarks(
@@ -59,9 +64,8 @@ public class exercise2 {
                                 return element.f0*1000;
                             }
                         }
-
                 )
-                .windowAll(TumblingEventTimeWindows.of(Time.seconds(time))).apply(new SimpleSum());
+                .windowAll(TumblingEventTimeWindows.of(Time.seconds(time))).apply(new Exercise2());
 
         // emit result
         if (params.has("output")) {
@@ -74,25 +78,29 @@ public class exercise2 {
     }
 
     
-    public static class SimpleSum implements AllWindowFunction<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>, Tuple4<Integer, Integer, Integer, String>, TimeWindow> {
+    public static class Exercise2 implements AllWindowFunction<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>, Tuple4<Integer, Integer, Integer, String>, TimeWindow> {
         public void apply(TimeWindow timeWindow, Iterable<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> input, Collector<Tuple4<Integer, Integer, Integer, String>> out) throws Exception {
             Iterator<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> iterator = input.iterator();
             Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> first = iterator.next();
             Integer ts = 0;
             Integer xway = 0;
             Integer cars = 0;
-            String vid = "";
+            String vids = "";
             if(first!=null){
                 xway = first.f3;
                 ts = first.f0;
                 cars = 1;
-                vid = first.f1.toString();
+                vids = "["+first.f1.toString();
             }
             while(iterator.hasNext()){
             	Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> next = iterator.next();
             	cars += 1;
+            	vids = vids.concat("-"+next.f1);
             }
-            out.collect(new Tuple4<Integer, Integer, Integer, String>(ts, xway, cars, vid));
+            if (!iterator.hasNext()) {
+            	vids = vids.concat("]");
+            }
+            out.collect(new Tuple4<Integer, Integer, Integer, String>(ts, xway, cars, vids));
         }
         
     }
