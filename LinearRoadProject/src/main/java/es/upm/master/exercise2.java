@@ -23,6 +23,8 @@ import org.apache.flink.streaming.api.windowing.time.Time;
 import org.apache.flink.streaming.api.windowing.windows.TimeWindow;
 import org.apache.flink.util.Collector;
 
+import es.upm.master.exercise2.Exercise2;
+
 public class exercise2 {
     public static void main(String[] args) throws Exception {
 
@@ -43,7 +45,7 @@ public class exercise2 {
         env.getConfig().setGlobalJobParameters(params);
         env.setStreamTimeCharacteristic(TimeCharacteristic.EventTime);
 
-        SingleOutputStreamOperator<Tuple4<Integer, Integer, Integer, String>> sumTumblingEventTimeWindows = source.
+        SingleOutputStreamOperator<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> filterStream = source.
                 map(new MapFunction<String, Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>>() {
                     public Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> map(String in) throws Exception{
                         String[] fieldArray = in.split(",");
@@ -56,16 +58,20 @@ public class exercise2 {
                     public boolean filter(Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> in) throws Exception {
                         return ((startSegment<=in.f5) && (endSegment>=in.f5) && in.f4.equals(0) && in.f2>speed);
                     }
-                })
-                .assignTimestampsAndWatermarks(
+                });
+        
+        SingleOutputStreamOperator<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>> keyedStream =  filterStream
+        		.assignTimestampsAndWatermarks(
                         new AscendingTimestampExtractor<Tuple6<Integer, Integer, Integer, Integer, Integer, Integer>>() {
                             @Override
                             public long extractAscendingTimestamp(Tuple6<Integer, Integer, Integer, Integer, Integer, Integer> element) {
                                 return element.f0*1000;
                             }
                         }
-                )
-                .windowAll(TumblingEventTimeWindows.of(Time.seconds(time))).apply(new Exercise2());
+                );
+                
+        SingleOutputStreamOperator<Tuple4<Integer, Integer, Integer, String>> sumTumblingEventTimeWindows =keyedStream
+        		.windowAll(TumblingEventTimeWindows.of(Time.seconds(time))).apply(new Exercise2());
 
         // emit result
         if (params.has("output")) {

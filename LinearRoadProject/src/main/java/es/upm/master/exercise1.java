@@ -64,7 +64,7 @@ public class exercise1 {
                             }
                         }
 
-                )
+                ).startNewChain()
                 .windowAll(TumblingEventTimeWindows.of(Time.hours(1))).apply(new SimpleSum());
 
         // emit result

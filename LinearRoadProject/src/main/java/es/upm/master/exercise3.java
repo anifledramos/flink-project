@@ -70,7 +70,8 @@ public class exercise3 {
                             }
                         }
 
-                ).keyBy(1);
+                ).startNewChain()
+                .keyBy(1);
         
         SingleOutputStreamOperator<Tuple4<Integer,Integer, Integer, Integer>> intTumblingEventTimeWindows =
                 keyedStream.window(TumblingEventTimeWindows.of(Time.seconds(3600))).apply(new AvgCar());
