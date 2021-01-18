@@ -8,6 +8,7 @@ import org.apache.flink.api.common.functions.MapFunction;
 import org.apache.flink.api.common.functions.ReduceFunction;
 import org.apache.flink.api.java.tuple.Tuple6;
 import org.apache.flink.api.java.tuple.Tuple;
+import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.api.java.tuple.Tuple3;
 import org.apache.flink.api.java.tuple.Tuple4;
 import org.apache.flink.api.java.utils.ParameterTool;
@@ -65,7 +66,8 @@ public class exercise2 {
                             }
                         }
                 )
-                .windowAll(TumblingEventTimeWindows.of(Time.seconds(time))).apply(new Exercise2());
+                .windowAll(TumblingEventTimeWindows.of(Time.seconds(time)))
+                .apply(new Exercise2());
 
         // emit result
         if (params.has("output")) {
